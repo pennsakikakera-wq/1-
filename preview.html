@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>1ページ小説の欠片</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  background: #e6e2d3;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+/* ヘッダー */
+h1 {
+  font-size: 20px;
+  margin: 10px;
+}
+
+/* 入力エリア */
+.container {
+  padding: 10px;
+}
+
+input, textarea, select {
+  width: 95%;
+  max-width: 500px;
+  margin: 5px auto;
+  padding: 10px;
+  font-size: 16px;
+}
+
+textarea {
+  height: 120px;
+}
+
+/* ボタン（スマホ最適） */
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+button {
+  flex: 1 1 45%;
+  padding: 12px;
+  font-size: 14px;
+}
+
+/* 本ページ */
+#page {
+  position: relative;
+  width: 90vw;
+  max-width: 340px;
+  height: 520px;
+  margin: 20px auto;
+  padding: 30px 25px;
+  border: 1px solid #aaa;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+/* テンプレ */
+.bunko { background:#fdfbf7; color:#000; }
+.washi { background:#f8f4e6; color:#222; }
+.dark { background:#1a1a1a; color:#eee; }
+
+/* 本文 */
+#content {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: 'Noto Serif JP', serif;
+  line-height: 2.2;
+  height: 100%;
+}
+
+/* タイトル */
+#titleDisplay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  writing-mode: vertical-rl;
+  font-size: 14px;
+}
+
+/* ページ番号 */
+#pageNumber {
+  position: absolute;
+  bottom: 10px;
+  left: 15px;
+  font-size: 12px;
+}
+
+/* 署名 */
+#signature {
+  position: absolute;
+  bottom: 10px;
+  right: 15px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+
+<h1>1ページ小説の欠片</h1>
+
+<div class="container">
+
+<input id="titleInput" placeholder="タイトル">
+
+<textarea id="input" placeholder="本文（自動で800文字ごとにページ分割）"></textarea>
+
+<p>文字数：<span id="count">0</span></p>
+
+<select id="template">
+  <option value="bunko">文庫風</option>
+  <option value="washi">和紙風</option>
+  <option value="dark">ダーク</option>
+</select>
+
+<div class="buttons">
+  <button onclick="prevPage()">← 前</button>
+  <button onclick="nextPage()">次 →</button>
+  <button onclick="saveImage()">画像保存</button>
+  <button onclick="saveData()">保存</button>
+</div>
+
+</div>
+
+<div id="page" class="bunko">
+  <div id="titleDisplay"></div>
+  <div id="content"></div>
+  <div id="pageNumber">1</div>
+  <div id="signature">ペン先の欠片</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+const input = document.getElementById("input");
+const content = document.getElementById("content");
+const count = document.getElementById("count");
+const titleInput = document.getElementById("titleInput");
+const titleDisplay = document.getElementById("titleDisplay");
+const pageNumber = document.getElementById("pageNumber");
+const template = document.getElementById("template");
+const page = document.getElementById("page");
+
+let pages = [];
+let currentPage = 0;
+
+// 自動ページ分割
+function splitPages(text) {
+  const result = [];
+  for (let i = 0; i < text.length; i += 800) {
+    result.push(text.slice(i, i + 800));
+  }
+  return result.length ? result : [""];
+}
+
+// 入力更新
+input.addEventListener("input", () => {
+  count.textContent = input.value.length;
+  pages = splitPages(input.value);
+  currentPage = 0;
+  render();
+});
+
+// 描画
+function render() {
+  content.textContent = pages[currentPage];
+  titleDisplay.textContent = titleInput.value;
+  pageNumber.textContent = currentPage + 1;
+  page.className = template.value;
+}
+
+// ページ移動
+function nextPage() {
+  if (currentPage < pages.length - 1) {
+    currentPage++;
+    render();
+  }
+}
+
+function prevPage() {
+  if (currentPage > 0) {
+    currentPage--;
+    render();
+  }
+}
+
+// 画像保存
+function saveImage() {
+  html2canvas(page).then(canvas => {
+    const link = document.createElement("a");
+    link.download = `page_${currentPage+1}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+
+// 保存機能（ブラウザ）
+function saveData() {
+  localStorage.setItem("novel_title", titleInput.value);
+  localStorage.setItem("novel_text", input.value);
+  alert("保存しました");
+}
+
+// 読み込み
+window.onload = () => {
+  const savedTitle = localStorage.getItem("novel_title");
+  const savedText = localStorage.getItem("novel_text");
+
+  if (savedTitle) titleInput.value = savedTitle;
+  if (savedText) input.value = savedText;
+
+  pages = splitPages(input.value);
+  render();
+};
+</script>
+
+</body>
+</html>
